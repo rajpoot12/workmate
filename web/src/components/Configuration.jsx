@@ -93,6 +93,9 @@ export default function Configuration({ health }) {
   const [teamTestStatus, setTeamTestStatus] = useState('');
   const [teamTestError,  setTeamTestError]  = useState('');
 
+  // guard: once settings are loaded from API, don't overwrite user edits
+  const settingsLoaded = useRef(false);
+
   // ── Save / restart state ───────────────────────────────────────────────
   const [saving,      setSaving]      = useState(false);
   const [saveStatus,  setSaveStatus]  = useState(''); // '' | 'restarting' | 'done' | 'error'
@@ -108,6 +111,10 @@ export default function Configuration({ health }) {
   // ── Load current settings ──────────────────────────────────────────────
   useEffect(() => {
     api.settings().then(s => {
+      // Only populate form on first load — never overwrite user edits
+      if (settingsLoaded.current) return;
+      settingsLoaded.current = true;
+
       setAiProvider(s.aiProvider || 'local');
       setOpenaiApiKey(s.openaiApiKey || '');
       setOpenaiBaseUrl(s.openaiBaseUrl || 'https://api.openai.com/v1');

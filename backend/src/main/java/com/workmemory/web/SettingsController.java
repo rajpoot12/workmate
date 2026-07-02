@@ -155,46 +155,47 @@ public class SettingsController {
         StringBuilder sb = new StringBuilder();
         sb.append("# WorkMemory AI configuration — managed by Settings UI\n");
 
+        // Each line uses 'export' so variables are visible to backend subprocess launched by wm.sh
+
         // AI provider
         String aiProvider = str(req, "aiProvider", "local");
-        sb.append("WM_AI_PROVIDER=").append(aiProvider).append("\n");
+        sb.append("export WM_AI_PROVIDER=").append(aiProvider).append("\n");
 
         // OpenAI
         String apiKey = str(req, "openaiApiKey", "");
         if (!MASKED.equals(apiKey)) {
-            sb.append("OPENAI_API_KEY=").append(apiKey).append("\n");
+            sb.append("export OPENAI_API_KEY=").append(apiKey).append("\n");
         } else {
-            // Keep existing value
             String existing = props.getAi().getOpenai().getApiKey();
-            sb.append("OPENAI_API_KEY=").append(existing == null ? "" : existing).append("\n");
+            sb.append("export OPENAI_API_KEY=").append(existing == null ? "" : existing).append("\n");
         }
-        sb.append("OPENAI_BASE_URL=").append(str(req, "openaiBaseUrl", "https://api.openai.com/v1")).append("\n");
-        sb.append("OPENAI_CHAT_MODEL=").append(str(req, "openaiChatModel", "gpt-4o-mini")).append("\n");
-        sb.append("OPENAI_EMBEDDING_MODEL=").append(str(req, "openaiEmbeddingModel", "text-embedding-3-small")).append("\n");
+        sb.append("export OPENAI_BASE_URL=").append(str(req, "openaiBaseUrl", "https://api.openai.com/v1")).append("\n");
+        sb.append("export OPENAI_CHAT_MODEL=").append(str(req, "openaiChatModel", "gpt-4o-mini")).append("\n");
+        sb.append("export OPENAI_EMBEDDING_MODEL=").append(str(req, "openaiEmbeddingModel", "text-embedding-3-small")).append("\n");
 
         // Personal DB
         String pHost = str(req, "personalHost", "localhost");
         String pPort = str(req, "personalPort", "5433");
         String pDb   = str(req, "personalDatabase", "workmemory");
-        sb.append("WM_PERSONAL_DB_URL=").append(buildJdbcUrl(pHost, pPort, pDb)).append("\n");
-        sb.append("WM_PERSONAL_DB_USER=").append(str(req, "personalUsername", "workmemory")).append("\n");
+        sb.append("export WM_PERSONAL_DB_URL=").append(buildJdbcUrl(pHost, pPort, pDb)).append("\n");
+        sb.append("export WM_PERSONAL_DB_USER=").append(str(req, "personalUsername", "workmemory")).append("\n");
         String pPass = str(req, "personalPassword", "");
         if (MASKED.equals(pPass)) pPass = props.getPersonal().getPassword();
-        sb.append("WM_PERSONAL_DB_PASSWORD=").append(pPass).append("\n");
+        sb.append("export WM_PERSONAL_DB_PASSWORD=").append(pPass).append("\n");
 
         // Team DB
         boolean teamEnabled = Boolean.TRUE.equals(req.get("teamEnabled"));
-        sb.append("WM_TEAM_ENABLED=").append(teamEnabled).append("\n");
-        sb.append("WM_TEAM_NAME=").append(str(req, "teamName", "")).append("\n");
+        sb.append("export WM_TEAM_ENABLED=").append(teamEnabled).append("\n");
+        sb.append("export WM_TEAM_NAME=").append(str(req, "teamName", "")).append("\n");
 
         String tHost = str(req, "teamHost", "");
         String tPort = str(req, "teamPort", "5432");
         String tDb   = str(req, "teamDatabase", "workmemory");
-        sb.append("WM_TEAM_DB_URL=").append(tHost.isBlank() ? "" : buildJdbcUrl(tHost, tPort, tDb)).append("\n");
-        sb.append("WM_TEAM_DB_USER=").append(str(req, "teamUsername", "workmemory")).append("\n");
+        sb.append("export WM_TEAM_DB_URL=").append(tHost.isBlank() ? "" : buildJdbcUrl(tHost, tPort, tDb)).append("\n");
+        sb.append("export WM_TEAM_DB_USER=").append(str(req, "teamUsername", "workmemory")).append("\n");
         String tPass = str(req, "teamPassword", "");
         if (MASKED.equals(tPass)) tPass = props.getTeam().getPassword() == null ? "" : props.getTeam().getPassword();
-        sb.append("WM_TEAM_DB_PASSWORD=").append(tPass).append("\n");
+        sb.append("export WM_TEAM_DB_PASSWORD=").append(tPass).append("\n");
 
         return sb.toString();
     }
@@ -233,6 +234,9 @@ public class SettingsController {
     }
 
     private void testDbConnection(String jdbcUrl, String user, String pass) throws Exception {
+        if (jdbcUrl == null || jdbcUrl.isBlank()) {
+            throw new IllegalArgumentException("Host is required — please fill in the host field");
+        }
         // Load driver explicitly (JDBC 4 auto-load may not work in all envs)
         try { Class.forName("org.postgresql.Driver"); } catch (ClassNotFoundException ignored) {}
         var conn = DriverManager.getConnection(jdbcUrl + "?connectTimeout=3&socketTimeout=3", user, pass);
