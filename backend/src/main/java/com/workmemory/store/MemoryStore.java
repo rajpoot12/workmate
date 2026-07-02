@@ -86,14 +86,21 @@ public class MemoryStore {
         if (tagNames == null || tagNames.isEmpty()) return;
         for (String raw : tagNames) {
             if (raw == null || raw.isBlank()) continue;
-            String name = raw.strip().toLowerCase();
-            // Upsert tag
-            jdbc.update("INSERT INTO tag (id, name) VALUES (?,?) ON CONFLICT (name) DO NOTHING",
-                    UUID.randomUUID(), name);
+            String tagName = raw.strip().toLowerCase();
+            // Use SELECT-then-INSERT (PG 9.2 compatible — no ON CONFLICT support until PG 9.5)
+            Integer tagCount = jdbc.queryForObject(
+                    "SELECT COUNT(*) FROM tag WHERE name = ?", Integer.class, tagName);
+            if (tagCount == null || tagCount == 0) {
+                jdbc.update("INSERT INTO tag (id, name) VALUES (?,?)", UUID.randomUUID(), tagName);
+            }
             UUID tagId = jdbc.queryForObject("SELECT id FROM tag WHERE name = ?",
-                    (rs, i) -> rs.getObject("id", UUID.class), name);
-            jdbc.update("INSERT INTO memory_tag (memory_id, tag_id) VALUES (?,?) ON CONFLICT DO NOTHING",
-                    memoryId, tagId);
+                    (rs, i) -> rs.getObject("id", UUID.class), tagName);
+            Integer linkCount = jdbc.queryForObject(
+                    "SELECT COUNT(*) FROM memory_tag WHERE memory_id = ? AND tag_id = ?",
+                    Integer.class, memoryId, tagId);
+            if (linkCount == null || linkCount == 0) {
+                jdbc.update("INSERT INTO memory_tag (memory_id, tag_id) VALUES (?,?)", memoryId, tagId);
+            }
         }
     }
 

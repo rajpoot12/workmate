@@ -107,6 +107,11 @@ public class PersistenceConfig {
                             .dataSource(ds)
                             .locations("classpath:db/migration")
                             .validateOnMigrate(false)
+                            // If schema already exists without a history table
+                            // (e.g. created manually), baseline at V1 so Flyway
+                            // doesn't try to re-run migrations on existing tables.
+                            .baselineOnMigrate(true)
+                            .baselineVersion("1")
                             .load()
                             .migrate();
                     ds.close();
