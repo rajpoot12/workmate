@@ -3,10 +3,10 @@ import { api, getScope, setScope, getTeam } from './api.js';
 import Ask from './components/Ask.jsx';
 import Library from './components/Library.jsx';
 import Capture from './components/Capture.jsx';
-import Privacy from './components/Privacy.jsx';
+import Configuration from './components/Configuration.jsx';
 import CommandPalette from './components/CommandPalette.jsx';
 
-const TABS = ['ask', 'library', 'capture', 'settings'];
+const TABS = ['ask', 'library', 'capture', 'config'];
 
 export default function App() {
   const [tab, setTab] = useState('ask');
@@ -121,7 +121,7 @@ export default function App() {
           {tab === 'ask'     && <Ask scope={scope} />}
           {tab === 'library' && <Library scope={scope} />}
           {tab === 'capture' && <Capture scope={scope} />}
-          {tab === 'settings' && <Privacy health={health} />}
+          {tab === 'config'  && <Configuration health={health} />}
         </main>
 
         <footer className="mt-8 border-t border-phosphor-dim pt-3 text-center text-[10px] text-phosphor-dim">

@@ -97,4 +97,21 @@ export const api = {
       headers: headers({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ text }),
     }).then(json),
+
+  settings: () =>
+    fetch('/api/settings', { headers: headers() }).then(json),
+
+  saveSettings: (body) =>
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: headers({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(body),
+    }).then(json),
+
+  testConnection: (body) =>
+    fetch('/api/settings/test', {
+      method: 'POST',
+      headers: headers({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(body),
+    }).then(json),
 };
