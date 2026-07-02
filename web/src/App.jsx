@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { api, getScope, setScope, getTeam } from './api.js';
+import { api, getScope, setScope, getTeam, setTeam } from './api.js';
 import Ask from './components/Ask.jsx';
 import Library from './components/Library.jsx';
 import Capture from './components/Capture.jsx';
@@ -15,7 +15,12 @@ export default function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
-    api.health().then(setHealth).catch(() => {});
+    api.health().then(h => {
+      setHealth(h);
+      // Keep localStorage team name in sync with what the backend has configured.
+      // This runs on every page load so the X-Team header is always correct.
+      if (h.teamName) setTeam(h.teamName);
+    }).catch(() => {});
   }, []);
 
   // Ctrl+K / Cmd+K opens the command palette

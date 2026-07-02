@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, getScope } from '../api.js';
+import { api, getScope, setTeam } from '../api.js';
 import { Badge, Panel, confidenceTone } from './ui.jsx';
 
 // ---------------------------------------------------------------------------
@@ -133,6 +133,8 @@ export default function Configuration({ health }) {
 
       setTeamEnabled(!!s.teamEnabled);
       setTeamName(s.teamName || '');
+      // Sync team name to localStorage so the X-Team header is sent correctly
+      if (s.teamEnabled && s.teamName) setTeam(s.teamName);
       setTeamHost(s.teamHost || '');
       setTeamPort(s.teamPort || '5432');
       setTeamDatabase(s.teamDatabase || 'workmemory');
