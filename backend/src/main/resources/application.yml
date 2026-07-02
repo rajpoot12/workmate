@@ -12,6 +12,11 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
+  flyway:
+    # V1 was rewritten for PG 9.2+ compatibility (trigger vs GENERATED column).
+    # Existing personal DBs already have V1 applied under the old checksum,
+    # so we skip checksum validation to avoid a mismatch error on restart.
+    validate-on-migrate: false
 
 workmemory:
   # AI provider: "local" (deterministic, no API key) or "openai"

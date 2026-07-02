@@ -1,6 +1,7 @@
 -- WorkMemory AI :: schema v2 (dual-DB personal/team redesign)
 -- No user identity model. Personal DB stores raw content. Team DB stores redacted content.
 -- team_name column is NULL on personal DB; on team DB it filters which team's memories to show.
+-- Compatible with PostgreSQL 9.2+ (trigger-based tsvector instead of GENERATED ALWAYS AS).
 
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
@@ -30,11 +31,25 @@ CREATE TABLE memory_chunk (
     chunk_index INT NOT NULL,
     text        TEXT NOT NULL,
     embedding   REAL[],
-    text_tsv    TSVECTOR GENERATED ALWAYS AS (to_tsvector('english', text)) STORED
+    text_tsv    TSVECTOR
 );
 
 CREATE INDEX idx_chunk_memory ON memory_chunk (memory_id);
 CREATE INDEX idx_chunk_tsv    ON memory_chunk USING gin (text_tsv);
+
+-- Trigger to keep text_tsv in sync on every insert/update.
+-- This replaces GENERATED ALWAYS AS and works on PostgreSQL 9.2+.
+CREATE OR REPLACE FUNCTION trg_fn_chunk_tsv()
+RETURNS trigger AS $$
+BEGIN
+    NEW.text_tsv := to_tsvector('english', coalesce(NEW.text, ''));
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_chunk_tsv
+BEFORE INSERT OR UPDATE ON memory_chunk
+FOR EACH ROW EXECUTE PROCEDURE trg_fn_chunk_tsv();
 
 -- File-system index for locate/find (personal store only in practice)
 CREATE TABLE file_index (
@@ -69,8 +84,8 @@ CREATE TABLE access_log (
     query           TEXT,
     router          TEXT,
     memory_ids_used TEXT,
-    confidence      TEXT,
     scope           TEXT,
+    confidence      TEXT,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
