@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Recall AI — Capture",
+  "version": "0.2.0",
+  "description": "Capture and query your AI work memory from any page. Select text → Alt+W to save, Alt+Shift+W to ask.",
+  "permissions": ["activeTab", "scripting", "storage", "contextMenus"],
+  "host_permissions": ["http://localhost:8080/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Recall AI — quick note",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "wm-save-selection": {
+      "suggested_key": {
+        "default": "Alt+W",
+        "mac": "Alt+W"
+      },
+      "description": "Save selected text to Recall AI"
+    },
+    "wm-ask-selection": {
+      "suggested_key": {
+        "default": "Alt+Shift+W",
+        "mac": "Alt+Shift+W"
+      },
+      "description": "Ask Recall AI about selected text"
+    }
+  }
+}

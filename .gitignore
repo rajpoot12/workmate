@@ -1,0 +1,32 @@
+# Local toolchain (downloaded Maven, etc.)
+.tools/
+
+# User-space PostgreSQL cluster data
+.pgdata/
+
+# Java / Maven
+backend/target/
+*.class
+
+# Node
+node_modules/
+web/dist/
+extension/dist/
+
+# Env / secrets
+.env
+*.local
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.settings/
+.classpath
+.project
+
+# OS
+.DS_Store
+
+# Uploaded / scanned data at runtime
+data/uploads/

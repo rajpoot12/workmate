@@ -1,0 +1,180 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+      body {
+        width: 340px; margin: 0; padding: 0;
+        background: #080d08; color: #33ff77;
+        font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 12px;
+      }
+
+      /* Header */
+      .header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 12px; border-bottom: 1px solid #1f7a3f;
+      }
+      .logo { color: #33ff77; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+      .scope-badge {
+        font-size: 10px; border: 1px solid #1f7a3f; padding: 1px 6px;
+        text-transform: uppercase; letter-spacing: .08em; cursor: pointer;
+        color: #7a8a7a;
+      }
+      .scope-badge.team { border-color: #00d4ff; color: #00d4ff; }
+
+      /* Tabs */
+      .tabs { display: flex; border-bottom: 1px solid #1f7a3f; }
+      .tab {
+        flex: 1; padding: 6px; text-align: center; font-size: 10px; letter-spacing: .1em;
+        text-transform: uppercase; cursor: pointer; color: #7a8a7a; border: none;
+        background: transparent; border-bottom: 2px solid transparent;
+      }
+      .tab.active { color: #33ff77; border-bottom-color: #33ff77; }
+      .tab:hover:not(.active) { color: #33ff77; }
+
+      /* Panes */
+      .pane { display: none; padding: 10px 12px; }
+      .pane.active { display: block; }
+
+      /* Inputs */
+      input, textarea, select {
+        width: 100%; background: #0e140e; color: #33ff77;
+        border: 1px solid #1f7a3f; padding: 6px; margin-bottom: 6px;
+        font: inherit; outline: none; resize: vertical;
+      }
+      input::placeholder, textarea::placeholder { color: #4a6a4a; }
+      input:focus, textarea:focus { border-color: #33ff77; }
+
+      /* Buttons */
+      button.btn {
+        background: #0e140e; color: #33ff77; border: 1px solid #33ff77;
+        padding: 5px 12px; text-transform: uppercase; letter-spacing: .08em;
+        cursor: pointer; font: inherit;
+      }
+      button.btn:hover { background: #103016; }
+      button.btn:disabled { opacity: 0.5; cursor: default; }
+      button.btn.secondary { border-color: #1f7a3f; color: #7a8a7a; }
+      button.btn.secondary:hover { color: #33ff77; border-color: #33ff77; }
+
+      .row { display: flex; gap: 6px; align-items: center; margin-top: 2px; }
+
+      /* Status message */
+      .msg { color: #7a8a7a; font-size: 11px; }
+      .msg.ok { color: #33ff77; }
+      .msg.err { color: #ff5f56; }
+      .msg.amber { color: #ffb000; }
+
+      /* Ask answer area */
+      .answer-box {
+        margin-top: 8px; border: 1px solid #1f7a3f; padding: 8px;
+        background: #0e140e; display: none;
+      }
+      .answer-box.visible { display: block; }
+      .answer-text {
+        color: #33ff77; white-space: pre-wrap; line-height: 1.5;
+        max-height: 160px; overflow-y: auto; font-size: 11px;
+      }
+      .answer-meta { margin-top: 6px; border-top: 1px solid #1f7a3f; padding-top: 6px; }
+      .badge {
+        display: inline-block; border: 1px solid #1f7a3f; padding: 0 4px;
+        font-size: 9px; text-transform: uppercase; letter-spacing: .06em;
+        margin-right: 3px; color: #7a8a7a;
+      }
+      .badge.ok { border-color: #33ff77; color: #33ff77; }
+      .badge.amber { border-color: #ffb000; color: #ffb000; }
+      .badge.cyan { border-color: #00d4ff; color: #00d4ff; }
+      .source-row {
+        color: #7a8a7a; font-size: 10px; margin-top: 4px;
+        border-left: 2px solid #1f7a3f; padding-left: 6px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .save-answer-btn {
+        margin-top: 6px; font-size: 10px; color: #7a8a7a; background: none;
+        border: 1px solid #1f7a3f; padding: 2px 8px; cursor: pointer; font: inherit;
+        text-transform: uppercase; letter-spacing: .08em;
+      }
+      .save-answer-btn:hover { color: #33ff77; border-color: #33ff77; }
+
+      /* Settings */
+      .setting-label { color: #7a8a7a; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px; }
+      hr { border: none; border-top: 1px solid #1f7a3f; margin: 8px 0; }
+
+      /* Hotkey hint */
+      .hint { color: #4a6a4a; font-size: 9px; margin-top: 8px; line-height: 1.6; }
+
+      /* Copy button */
+      .copy-btn {
+        background: none; border: 1px solid #1f7a3f; color: #7a8a7a;
+        font: inherit; font-size: 9px; padding: 1px 6px; cursor: pointer;
+        text-transform: uppercase; letter-spacing: .06em;
+      }
+      .copy-btn:hover, .copy-btn.copied { border-color: #33ff77; color: #33ff77; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <span class="logo">▚ Recall AI</span>
+      <span class="scope-badge" id="scopeBadge" title="Click to toggle scope">personal</span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab" data-tab="save">save</button>
+      <button class="tab active" data-tab="ask">ask</button>
+      <button class="tab" data-tab="settings">settings</button>
+    </div>
+
+    <!-- SAVE TAB -->
+    <div class="pane" id="pane-save">
+      <input id="title" placeholder="title (optional)" />
+      <textarea id="text" rows="4" placeholder="jot a note, paste a snippet…"></textarea>
+      <input id="tags" placeholder="tags, comma, separated" />
+      <div class="row">
+        <button class="btn" id="saveBtn">save note</button>
+        <span class="msg" id="saveMsg"></span>
+      </div>
+      <div class="hint">
+        Alt+W — save selection from any page<br>
+        Alt+Shift+W — ask about selection
+      </div>
+    </div>
+
+    <!-- ASK TAB -->
+    <div class="pane active" id="pane-ask">
+      <textarea id="question" rows="2" placeholder="ask anything from your memory…"></textarea>
+      <div class="row">
+        <button class="btn" id="askBtn">ask</button>
+        <span class="msg" id="askMsg"></span>
+      </div>
+
+      <div class="answer-box" id="answerBox">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div id="answerBadges"></div>
+          <button class="copy-btn" id="copyAnswerBtn" title="Copy answer">copy</button>
+        </div>
+        <div class="answer-text" id="answerText"></div>
+        <div class="answer-meta" id="answerMeta"></div>
+        <button class="save-answer-btn" id="saveAnswerBtn" style="display:none">⊕ save this answer</button>
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div class="pane" id="pane-settings">
+      <div class="setting-label">backend url</div>
+      <input id="backend" placeholder="http://localhost:8080" />
+      <div class="setting-label">team name (optional)</div>
+      <input id="teamName" placeholder="e.g. backend-team" />
+      <div class="row">
+        <button class="btn" id="saveCfg">save</button>
+        <span class="msg" id="cfgMsg"></span>
+      </div>
+      <hr>
+      <div class="hint">
+        Scope toggles between personal (local DB) and team (shared DB).<br>
+        Set team name only if using team scope.
+      </div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

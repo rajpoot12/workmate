@@ -1,0 +1,9 @@
+/* Host anchor for the WorkMemory overlay. Visual styles live in the shadow root
+   (see content.js) so the page's own CSS can never interfere. */
+#wm-host {
+  all: initial;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2147483647;
+}

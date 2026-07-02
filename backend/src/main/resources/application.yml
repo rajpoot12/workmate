@@ -1,0 +1,46 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: workmemory
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+workmemory:
+  # AI provider: "local" (deterministic, no API key) or "openai"
+  ai:
+    provider: ${WM_AI_PROVIDER:local}
+    embedding-dimension: 1536
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      chat-model: ${OPENAI_CHAT_MODEL:gpt-4o-mini}
+      embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+  rag:
+    top-k: 6
+    min-confidence-score: 0.18
+  # Personal database (local, per machine)
+  personal:
+    url: ${WM_PERSONAL_DB_URL:jdbc:postgresql://127.0.0.1:5433/workmemory}
+    username: ${WM_PERSONAL_DB_USER:workmemory}
+    password: ${WM_PERSONAL_DB_PASSWORD:workmemory}
+  # Team database (shared server) — disabled by default
+  team:
+    enabled: ${WM_TEAM_ENABLED:false}
+    url: ${WM_TEAM_DB_URL:}
+    username: ${WM_TEAM_DB_USER:workmemory}
+    password: ${WM_TEAM_DB_PASSWORD:}
+    name: ${WM_TEAM_NAME:}
+  seed: ${WM_SEED:false}
+
+logging:
+  level:
+    org.flywaydb: info
+    com.workmemory: info
