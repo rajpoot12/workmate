@@ -17,8 +17,17 @@ One product, three pieces:
 
 - **Two-search in one box** — content **RAG** (vector + keyword) *and* **locate/find**
   (fuzzy filename search) with an **intent router** (`rag | locate | both`).
+- **Verbatim recall** — when a query signals "give me the full script/SQL/runbook"
+  (e.g. `script to convert Franchisee users to Brand Users`, `full: migration sql`,
+  `show me the complete runbook`), Ask bypasses LLM synthesis and returns the full saved
+  `raw_text` in a fenced code block. A `full recall — not summarized` badge appears in
+  the UI. You can also force this mode by prefixing your query with `full:` or `verbatim:`.
+- **Scope-aware search** — personal mode searches both personal and team stores; team
+  mode searches the team store only, so personal memories never bleed into team answers.
+  Team mode also guards against missing team name or offline DB with a clear error message.
 - **Grounding contract** — every `/api/ask` returns `answer`, `sources[]` (cited),
-  `files[]`, `confidence` (`high|medium|low|none`), `router`. No source → not shown.
+  `files[]`, `confidence` (`high|medium|low|none`), `router`, and `mode`
+  (`rag|verbatim|locate`). No source → not shown.
 - **Honest confidence** — below threshold it says *"I don't have a memory for this"*
   instead of hallucinating.
 - **Visible redaction** — secrets/PII (tokens, keys, passwords, emails, internal

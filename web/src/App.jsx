@@ -125,7 +125,9 @@ export default function App() {
         </main>
 
         <footer className="mt-8 border-t border-phosphor-dim pt-3 text-center text-[10px] text-phosphor-dim">
-          personal (raw) · team (redacted) · ask searches both · every answer cited
+          {isTeam
+            ? 'team mode — ask searches team only · redacted before storage · every answer cited'
+            : 'personal (raw) · ask searches personal + team · every answer cited'}
         </footer>
       </div>
     </div>

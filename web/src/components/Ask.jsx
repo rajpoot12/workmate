@@ -68,7 +68,11 @@ export default function Ask({ scope }) {
         ))}
       </div>
 
-      {loading && <div className="text-phosphor-amber glow-amber">searching personal + team memory…</div>}
+      {loading && (
+        <div className="text-phosphor-amber glow-amber">
+          {scope === 'team' ? 'searching team memory…' : 'searching personal + team memory…'}
+        </div>
+      )}
       {err && <div className="text-phosphor-red">! {err}</div>}
 
       {res && !loading && (
@@ -76,6 +80,9 @@ export default function Ask({ scope }) {
           <div className="flex items-center gap-2">
             <Badge tone="gray">router: {res.router}</Badge>
             <Badge tone={confidenceTone(res.confidence)}>confidence: {res.confidence}</Badge>
+            {res.mode === 'verbatim' && (
+              <Badge tone="cyan">full recall — not summarized</Badge>
+            )}
           </div>
 
           {res.answer && (

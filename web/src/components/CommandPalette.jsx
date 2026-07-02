@@ -109,6 +109,9 @@ export default function CommandPalette({ onClose }) {
             <div className="flex items-center gap-2 flex-wrap">
               <Badge tone="gray">{result.data.router}</Badge>
               <Badge tone={confidenceTone(result.data.confidence)}>{result.data.confidence}</Badge>
+              {result.data.mode === 'verbatim' && (
+                <Badge tone="cyan">full recall</Badge>
+              )}
               <span className="ml-auto">
                 <CopyButton text={result.data.answer} />
               </span>
