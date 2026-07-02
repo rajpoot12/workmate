@@ -83,9 +83,13 @@ public class PersistenceConfig {
                                            AppProperties props) {
         return args -> {
             log.info("Running Flyway migration on personal DB...");
+            // validateOnMigrate=false: V1 was rewritten for PG 9.2+ compatibility
+            // (trigger-based tsvector). Existing DBs already have V1 under the old
+            // checksum — skip validation so they keep working without manual repair.
             Flyway.configure()
                     .dataSource(personal)
                     .locations("classpath:db/migration")
+                    .validateOnMigrate(false)
                     .load()
                     .migrate();
 
@@ -102,6 +106,7 @@ public class PersistenceConfig {
                     Flyway.configure()
                             .dataSource(ds)
                             .locations("classpath:db/migration")
+                            .validateOnMigrate(false)
                             .load()
                             .migrate();
                     ds.close();
