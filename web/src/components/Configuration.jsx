@@ -31,18 +31,20 @@ function Input({ value, onChange, type = 'text', placeholder = '', disabled = fa
 }
 
 function TestButton({ onClick, status }) {
-  const label = status === 'testing' ? 'testing…'
-    : status === 'ok'   ? '✓ connected'
-    : status === 'fail' ? '✗ failed'
+  const label =
+    status === 'testing' ? 'testing…'
+    : status === 'ok'    ? '✓ connected'
+    : status === 'fail'  ? '✗ failed'
     : 'test connection';
-  const tone = status === 'ok'   ? 'text-phosphor-green'
-    : status === 'fail' ? 'text-phosphor-red'
-    : 'text-phosphor-gray';
+  const tone =
+    status === 'ok'   ? 'text-phosphor-green border-phosphor-green'
+    : status === 'fail' ? 'text-phosphor-red border-red-700'
+    : 'text-phosphor-gray border-phosphor-dim';
   return (
     <button
       onClick={onClick}
       disabled={status === 'testing'}
-      className={`border border-phosphor-dim px-3 py-1 text-xs ${tone}
+      className={`border px-3 py-1 text-xs ${tone}
         hover:border-phosphor-green hover:text-phosphor-green disabled:opacity-50 transition-colors`}
     >
       {label}
@@ -57,12 +59,14 @@ function SectionTitle({ children }) {
 }
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+const POLL_INTERVAL = 2000;
+const POLL_TIMEOUT  = 60000;
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
-
-const POLL_INTERVAL = 2000;
-const POLL_TIMEOUT  = 45000;
-
 export default function Configuration({ health }) {
   // ── AI Engine ──────────────────────────────────────────────────────────
   const [aiProvider,           setAiProvider]           = useState('local');
@@ -74,48 +78,48 @@ export default function Configuration({ health }) {
   const [aiTestError,          setAiTestError]          = useState('');
 
   // ── Personal DB ────────────────────────────────────────────────────────
-  const [personalHost,     setPersonalHost]     = useState('localhost');
-  const [personalPort,     setPersonalPort]     = useState('5433');
-  const [personalDatabase, setPersonalDatabase] = useState('workmemory');
-  const [personalUsername, setPersonalUsername] = useState('workmemory');
-  const [personalPassword, setPersonalPassword] = useState('');
+  const [personalHost,       setPersonalHost]       = useState('localhost');
+  const [personalPort,       setPersonalPort]       = useState('5433');
+  const [personalDatabase,   setPersonalDatabase]   = useState('workmemory');
+  const [personalUsername,   setPersonalUsername]   = useState('workmemory');
+  const [personalPassword,   setPersonalPassword]   = useState('');
   const [personalTestStatus, setPersonalTestStatus] = useState('');
   const [personalTestError,  setPersonalTestError]  = useState('');
 
   // ── Team DB ────────────────────────────────────────────────────────────
-  const [teamEnabled,  setTeamEnabled]  = useState(false);
-  const [teamName,     setTeamName]     = useState('');
-  const [teamHost,     setTeamHost]     = useState('');
-  const [teamPort,     setTeamPort]     = useState('5432');
-  const [teamDatabase, setTeamDatabase] = useState('workmemory');
-  const [teamUsername, setTeamUsername] = useState('workmemory');
-  const [teamPassword, setTeamPassword] = useState('');
+  const [teamEnabled,    setTeamEnabled]    = useState(false);
+  const [teamName,       setTeamName]       = useState('');
+  const [teamHost,       setTeamHost]       = useState('');
+  const [teamPort,       setTeamPort]       = useState('5432');
+  const [teamDatabase,   setTeamDatabase]   = useState('workmemory');
+  const [teamUsername,   setTeamUsername]   = useState('workmemory');
+  const [teamPassword,   setTeamPassword]   = useState('');
   const [teamTestStatus, setTeamTestStatus] = useState('');
   const [teamTestError,  setTeamTestError]  = useState('');
 
-  // guard: once settings are loaded from API, don't overwrite user edits
-  const settingsLoaded = useRef(false);
-
   // ── Save / restart state ───────────────────────────────────────────────
-  const [saving,      setSaving]      = useState(false);
-  const [saveStatus,  setSaveStatus]  = useState(''); // '' | 'restarting' | 'done' | 'error'
-  const [saveError,   setSaveError]   = useState('');
+  const [saving,     setSaving]     = useState(false);
+  const [saveStatus, setSaveStatus] = useState(''); // '' | 'restarting' | 'done' | 'error'
+  const [saveError,  setSaveError]  = useState('');
+
+  // ── Standalone restart button state ───────────────────────────────────
+  const [restarting,     setRestarting]     = useState(false);
+  const [restartStatus,  setRestartStatus]  = useState(''); // '' | 'restarting' | 'done' | 'error'
+  const [restartError,   setRestartError]   = useState('');
+
   const pollTimer = useRef(null);
 
-  // ── Advanced section (privacy legacy) ─────────────────────────────────
-  const [advancedOpen,    setAdvancedOpen]    = useState(false);
-  const [log,             setLog]             = useState([]);
-  const [reindexResult,   setReindexResult]   = useState(null);
-  const [reindexing,      setReindexing]      = useState(false);
+  // ── Advanced section ───────────────────────────────────────────────────
+  const [advancedOpen,  setAdvancedOpen]  = useState(false);
+  const [log,           setLog]           = useState([]);
+  const [reindexResult, setReindexResult] = useState(null);
+  const [reindexing,    setReindexing]    = useState(false);
 
-  // ── Load current settings ──────────────────────────────────────────────
-  useEffect(() => {
+  // ── Load settings from backend ─────────────────────────────────────────
+  function loadSettings() {
     api.settings().then(s => {
-      // Only populate form on first load — never overwrite user edits
-      if (settingsLoaded.current) return;
-      settingsLoaded.current = true;
-
       setAiProvider(s.aiProvider || 'local');
+      // Only update API key field if it's not currently a real value the user typed
       setOpenaiApiKey(s.openaiApiKey || '');
       setOpenaiBaseUrl(s.openaiBaseUrl || 'https://api.openai.com/v1');
       setOpenaiChatModel(s.openaiChatModel || 'gpt-4o-mini');
@@ -135,15 +139,45 @@ export default function Configuration({ health }) {
       setTeamUsername(s.teamUsername || 'workmemory');
       setTeamPassword(s.teamPassword || '');
     }).catch(() => {});
-
     api.accessLog().then(setLog).catch(() => {});
-  }, []);
+  }
+
+  useEffect(() => { loadSettings(); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Poll until backend is healthy, then call onBack ───────────────────
+  function pollUntilHealthy(onBack, onTimeout) {
+    clearInterval(pollTimer.current);
+    const deadline = Date.now() + POLL_TIMEOUT;
+    // Give backend a few seconds to actually go down before we start polling
+    setTimeout(() => {
+      pollTimer.current = setInterval(async () => {
+        if (Date.now() > deadline) {
+          clearInterval(pollTimer.current);
+          onTimeout();
+          return;
+        }
+        try {
+          const res = await fetch('/api/health');
+          if (res.ok) {
+            clearInterval(pollTimer.current);
+            onBack();
+          }
+        } catch (_) {
+          // Backend still restarting — keep polling
+        }
+      }, POLL_INTERVAL);
+    }, 4000); // wait 4s for backend to start shutting down
+  }
+
+  useEffect(() => () => clearInterval(pollTimer.current), []);
 
   // ── Test connections ───────────────────────────────────────────────────
   async function testAi() {
     setAiTestStatus('testing'); setAiTestError('');
     try {
-      const r = await api.testConnection({ type: 'openai', apiKey: openaiApiKey, baseUrl: openaiBaseUrl });
+      const r = await api.testConnection({
+        type: 'openai', apiKey: openaiApiKey, baseUrl: openaiBaseUrl,
+      });
       setAiTestStatus(r.ok ? 'ok' : 'fail');
       if (!r.ok) setAiTestError(r.error || 'Connection failed');
     } catch (e) {
@@ -181,39 +215,47 @@ export default function Configuration({ health }) {
 
   // ── Save & Apply ───────────────────────────────────────────────────────
   async function saveAndApply() {
-    setSaving(true); setSaveStatus('restarting'); setSaveError('');
+    setSaving(true); setSaveStatus('saving'); setSaveError('');
     try {
       await api.saveSettings({
         aiProvider, openaiApiKey, openaiBaseUrl, openaiChatModel, openaiEmbeddingModel,
         personalHost, personalPort, personalDatabase, personalUsername, personalPassword,
         teamEnabled, teamName, teamHost, teamPort, teamDatabase, teamUsername, teamPassword,
       });
-      // Poll health until backend is back up
-      const deadline = Date.now() + POLL_TIMEOUT;
-      pollTimer.current = setInterval(async () => {
-        if (Date.now() > deadline) {
-          clearInterval(pollTimer.current);
+      setSaveStatus('restarting');
+      pollUntilHealthy(
+        () => { setSaveStatus('done'); setSaving(false); loadSettings(); },
+        () => {
           setSaveStatus('error');
-          setSaveError('Backend did not restart in time. Check logs and try again.');
+          setSaveError('Backend did not come back in time. Click "Restart Backend" below to retry.');
           setSaving(false);
-          return;
         }
-        try {
-          await fetch('/api/health');
-          clearInterval(pollTimer.current);
-          setSaveStatus('done');
-          setSaving(false);
-        } catch (_) {
-          // still restarting, keep polling
-        }
-      }, POLL_INTERVAL);
+      );
     } catch (e) {
-      setSaveStatus('error'); setSaveError(e.message); setSaving(false);
+      setSaveStatus('error'); setSaveError(e.message || 'Save failed — backend may be down'); setSaving(false);
     }
   }
 
-  // Clean up poll on unmount
-  useEffect(() => () => clearInterval(pollTimer.current), []);
+  // ── Standalone restart backend ─────────────────────────────────────────
+  async function restartBackend() {
+    setRestarting(true); setRestartStatus('restarting'); setRestartError('');
+    try {
+      // Fire-and-forget — backend will kill itself and restart
+      fetch('/api/settings/restart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      }).catch(() => {}); // ignore — connection will drop when backend restarts
+    } catch (_) {}
+
+    pollUntilHealthy(
+      () => { setRestartStatus('done'); setRestarting(false); loadSettings(); },
+      () => {
+        setRestartStatus('error');
+        setRestartError('Backend did not come back. Open a terminal and run: ./wm.sh restart backend');
+        setRestarting(false);
+      }
+    );
+  }
 
   async function reindexMemories() {
     setReindexing(true); setReindexResult(null);
@@ -232,6 +274,30 @@ export default function Configuration({ health }) {
   // ── Render ─────────────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
+
+      {/* ── Restart Backend button — always visible at top ── */}
+      <div className="border border-phosphor-dim bg-phosphor-bg/40 px-4 py-3 flex items-center gap-4">
+        <div className="flex-1">
+          <p className="text-xs text-phosphor-dim uppercase tracking-widest mb-0.5">Backend Engine</p>
+          <p className="text-[11px] text-phosphor-dim">
+            {restartStatus === 'restarting'
+              ? 'Restarting — usually takes 15–25 seconds…'
+              : restartStatus === 'done'
+              ? '✓ Backend is back online'
+              : restartStatus === 'error'
+              ? `! ${restartError}`
+              : 'Restart the backend to apply new settings or if the app seems stuck.'}
+          </p>
+        </div>
+        <button
+          onClick={restartBackend}
+          disabled={restarting || saving}
+          className="border border-phosphor-dim px-4 py-2 text-xs text-phosphor-green
+            hover:border-phosphor-green disabled:opacity-40 transition-colors whitespace-nowrap"
+        >
+          {restarting ? '⟳ restarting…' : '⟳ Restart Backend'}
+        </button>
+      </div>
 
       {/* ── AI Engine ── */}
       <Panel title="AI engine">
@@ -261,11 +327,11 @@ export default function Configuration({ health }) {
 
         {aiProvider === 'openai' && (
           <div className="mt-4 space-y-3 border-l-2 border-phosphor-dim pl-4">
-            <Field label="API Key" hint="Starts with sk-  — saved securely in the .env file on this machine.">
-              <Input type="password" value={openaiApiKey} onChange={setOpenaiApiKey}
-                placeholder="sk-..." />
+            <Field label="API Key" hint="Starts with sk-  — saved in the .env file on this machine only.">
+              <Input type="password" value={openaiApiKey} onChange={v => { setOpenaiApiKey(v); setAiTestStatus(''); }}
+                placeholder="sk-…" />
             </Field>
-            <Field label="Base URL (change only for Azure / custom endpoints)">
+            <Field label="Base URL (leave default unless using Azure or custom endpoint)">
               <Input value={openaiBaseUrl} onChange={setOpenaiBaseUrl} />
             </Field>
             <div className="grid grid-cols-2 gap-3">
@@ -277,7 +343,7 @@ export default function Configuration({ health }) {
                   placeholder="text-embedding-3-small" />
               </Field>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <TestButton onClick={testAi} status={aiTestStatus} />
               {aiTestStatus === 'fail' && aiTestError && (
                 <span className="text-xs text-phosphor-red">! {aiTestError}</span>
@@ -294,26 +360,30 @@ export default function Configuration({ health }) {
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
               <Field label="Host">
-                <Input value={personalHost} onChange={v => { setPersonalHost(v); setPersonalTestStatus(''); }} />
+                <Input value={personalHost}
+                  onChange={v => { setPersonalHost(v); setPersonalTestStatus(''); }} />
               </Field>
             </div>
             <Field label="Port">
-              <Input value={personalPort} onChange={v => { setPersonalPort(v); setPersonalTestStatus(''); }} />
+              <Input value={personalPort}
+                onChange={v => { setPersonalPort(v); setPersonalTestStatus(''); }} />
             </Field>
           </div>
           <Field label="Database name">
-            <Input value={personalDatabase} onChange={v => { setPersonalDatabase(v); setPersonalTestStatus(''); }} />
+            <Input value={personalDatabase}
+              onChange={v => { setPersonalDatabase(v); setPersonalTestStatus(''); }} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Username">
-              <Input value={personalUsername} onChange={v => { setPersonalUsername(v); setPersonalTestStatus(''); }} />
+              <Input value={personalUsername}
+                onChange={v => { setPersonalUsername(v); setPersonalTestStatus(''); }} />
             </Field>
             <Field label="Password">
               <Input type="password" value={personalPassword}
                 onChange={v => { setPersonalPassword(v); setPersonalTestStatus(''); }} />
             </Field>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <TestButton onClick={testPersonalDb} status={personalTestStatus} />
             {personalTestStatus === 'fail' && personalTestError && (
               <span className="text-xs text-phosphor-red">! {personalTestError}</span>
@@ -328,7 +398,7 @@ export default function Configuration({ health }) {
 
         <label className="flex items-center gap-2 text-sm cursor-pointer mb-4">
           <input type="checkbox" checked={teamEnabled}
-            onChange={e => setTeamEnabled(e.target.checked)}
+            onChange={e => { setTeamEnabled(e.target.checked); setTeamTestStatus(''); }}
             className="accent-[#33ff77]" />
           <span className="text-phosphor-green">Enable team features</span>
           <span className="text-phosphor-dim text-xs ml-1">— connect to a shared team database</span>
@@ -336,7 +406,7 @@ export default function Configuration({ health }) {
 
         {teamEnabled && (
           <div className="space-y-3 border-l-2 border-phosphor-dim pl-4">
-            <Field label="Team name" hint="Used to filter your team's memories. e.g. franconnect-ops">
+            <Field label="Team name" hint="Used to label memories. e.g. franconnect-ops">
               <Input value={teamName} onChange={setTeamName} placeholder="your-team-name" />
             </Field>
             <div className="grid grid-cols-3 gap-3">
@@ -351,18 +421,20 @@ export default function Configuration({ health }) {
               </Field>
             </div>
             <Field label="Database name">
-              <Input value={teamDatabase} onChange={v => { setTeamDatabase(v); setTeamTestStatus(''); }} />
+              <Input value={teamDatabase}
+                onChange={v => { setTeamDatabase(v); setTeamTestStatus(''); }} />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Username">
-                <Input value={teamUsername} onChange={v => { setTeamUsername(v); setTeamTestStatus(''); }} />
+                <Input value={teamUsername}
+                  onChange={v => { setTeamUsername(v); setTeamTestStatus(''); }} />
               </Field>
               <Field label="Password">
                 <Input type="password" value={teamPassword}
                   onChange={v => { setTeamPassword(v); setTeamTestStatus(''); }} />
               </Field>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <TestButton onClick={testTeamDb} status={teamTestStatus} />
               {teamTestStatus === 'fail' && teamTestError && (
                 <span className="text-xs text-phosphor-red">! {teamTestError}</span>
@@ -373,34 +445,42 @@ export default function Configuration({ health }) {
       </Panel>
 
       {/* ── Save & Apply ── */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={saveAndApply}
-          disabled={saving}
-          className="border border-phosphor-green px-5 py-2 text-sm text-phosphor-green
-            hover:bg-phosphor-dim/30 disabled:opacity-50 transition-colors"
-        >
-          {saving ? 'saving…' : 'Save & Apply'}
-        </button>
+      <div className="border border-phosphor-dim p-4">
+        <p className="text-xs text-phosphor-dim mb-3">
+          Saves all settings above and restarts the backend so they take effect immediately.
+          Takes about 20 seconds.
+        </p>
+        <div className="flex items-center gap-4 flex-wrap">
+          <button
+            onClick={saveAndApply}
+            disabled={saving || restarting}
+            className="border border-phosphor-green px-5 py-2 text-sm text-phosphor-green
+              hover:bg-phosphor-dim/30 disabled:opacity-50 transition-colors"
+          >
+            {saving ? 'saving…' : 'Save & Apply'}
+          </button>
 
-        {saveStatus === 'restarting' && (
-          <span className="text-sm text-phosphor-amber glow-amber">
-            Restarting backend — this takes ~10 seconds…
-          </span>
-        )}
-        {saveStatus === 'done' && (
-          <span className="text-sm text-phosphor-green glow">
-            ✓ Applied. WorkMemory is ready.
-          </span>
-        )}
-        {saveStatus === 'error' && (
-          <span className="text-sm text-phosphor-red">
-            ! {saveError}
-          </span>
-        )}
+          {(saveStatus === 'saving' || saveStatus === 'restarting') && (
+            <span className="text-sm text-phosphor-amber">
+              {saveStatus === 'saving'
+                ? 'Writing settings…'
+                : '⟳ Restarting backend — about 20 seconds…'}
+            </span>
+          )}
+          {saveStatus === 'done' && (
+            <span className="text-sm text-phosphor-green">
+              ✓ Applied. WorkMemory is ready.
+            </span>
+          )}
+          {saveStatus === 'error' && (
+            <span className="text-sm text-phosphor-red">
+              ! {saveError}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* ── Advanced (legacy privacy panel) ── */}
+      {/* ── Advanced ── */}
       <div className="border border-phosphor-dim">
         <button
           onClick={() => setAdvancedOpen(v => !v)}
@@ -415,8 +495,6 @@ export default function Configuration({ health }) {
 
         {advancedOpen && (
           <div className="border-t border-phosphor-dim p-4 space-y-4">
-
-            {/* Rebuild embeddings */}
             <div>
               <p className="text-xs text-phosphor-dim mb-2">
                 Re-embeds all memories so search works correctly after switching AI engines.
@@ -433,7 +511,6 @@ export default function Configuration({ health }) {
               )}
             </div>
 
-            {/* Access log */}
             <div>
               <p className="text-xs uppercase tracking-widest text-phosphor-dim mb-2">
                 Recent searches (what the AI read)
@@ -453,7 +530,6 @@ export default function Configuration({ health }) {
                 )}
               </ul>
             </div>
-
           </div>
         )}
       </div>

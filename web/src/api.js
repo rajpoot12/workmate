@@ -114,4 +114,10 @@ export const api = {
       headers: headers({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(body),
     }).then(json),
+
+  restartBackend: () =>
+    fetch('/api/settings/restart', {
+      method: 'POST',
+      headers: headers({ 'Content-Type': 'application/json' }),
+    }).then(json),
 };

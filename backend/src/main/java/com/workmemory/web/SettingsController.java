@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClient;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -126,25 +127,34 @@ public class SettingsController {
             String env = buildEnvContent(req);
             writeEnvFile(env);
             log.info("Settings saved to .env — scheduling backend restart");
-
-            // Schedule restart after response is sent
-            Thread restartThread = new Thread(() -> {
-                try {
-                    Thread.sleep(800);
-                    restartBackend();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }, "settings-restart");
-            restartThread.setDaemon(true);
-            restartThread.start();
-
+            scheduleRestart();
             return ResponseEntity.ok(Map.of("saved", true, "restarting", true));
         } catch (Exception e) {
             log.error("Failed to save settings: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError()
                     .body(Map.of("saved", false, "error", e.getMessage()));
         }
+    }
+
+    @PostMapping("/restart")
+    public ResponseEntity<Map<String, Object>> restartOnly() {
+        log.info("Manual restart requested via /api/settings/restart");
+        scheduleRestart();
+        return ResponseEntity.ok(Map.of("restarting", true));
+    }
+
+    private void scheduleRestart() {
+        Thread t = new Thread(() -> {
+            try {
+                // Wait long enough for the HTTP response to be fully delivered
+                Thread.sleep(3000);
+                restartBackend();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "settings-restart");
+        t.setDaemon(true);
+        t.start();
     }
 
     // ------------------------------------------------------------------
@@ -223,11 +233,15 @@ public class SettingsController {
                 return;
             }
             log.info("Triggering backend restart via wm.sh restart backend");
+            // IMPORTANT: redirect output to a FILE (not a pipe).
+            // If we use a pipe (default), bash gets SIGPIPE when this JVM is killed
+            // and exits immediately — the restart never completes.
+            File restartLog = new File("/tmp/wm-restart.log");
             new ProcessBuilder("bash", wmSh.toString(), "restart", "backend")
                     .directory(projectRoot.toFile())
+                    .redirectOutput(restartLog)
                     .redirectErrorStream(true)
                     .start();
-            // wm.sh will kill this process via fuser; no explicit exit needed
         } catch (IOException e) {
             log.error("Failed to trigger restart: {}", e.getMessage());
         }
