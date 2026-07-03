@@ -12,27 +12,71 @@
 
   const style = document.createElement('style');
   style.textContent = `
-    :host { all: initial; }
-    .wrap { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+    /* ── Theme tokens — dev (default) ── */
+    :host {
+      all: initial;
+      --wm-surface: #0e140e;
+      --wm-panel-bg: #0a120a;
+      --wm-border: #1f7a3f;
+      --wm-accent: #33ff77;
+      --wm-accent-contrast: #0a0e0a;
+      --wm-muted: #7a8a7a;
+      --wm-muted-dim: #4a6a4a;
+      --wm-red: #ff5f56;
+      --wm-amber: #ffb000;
+      --wm-red-bg: transparent;
+      --wm-amber-bg: transparent;
+      --wm-font: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+      --wm-radius: 2px;
+      --wm-label-transform: uppercase;
+      --wm-label-spacing: .08em;
+      --wm-btn-bg: transparent;
+      --wm-btn-color: var(--wm-accent);
+      --wm-shadow: 0 0 0 1px #000, 0 6px 20px rgba(0,0,0,.5);
+    }
+    /* ── Theme tokens — friendly (configured on the web app's Config page) ── */
+    :host(.theme-friendly) {
+      --wm-surface: #ffffff;
+      --wm-panel-bg: #f8f9fb;
+      --wm-border: #e4e7ec;
+      --wm-accent: #4f6ef7;
+      --wm-accent-contrast: #111827;
+      --wm-muted: #6b7280;
+      --wm-muted-dim: #9ca3af;
+      --wm-red: #dc2626;
+      --wm-amber: #d97706;
+      --wm-red-bg: #fee2e2;
+      --wm-amber-bg: #fef3c7;
+      --wm-font: 'Inter', system-ui, -apple-system, sans-serif;
+      --wm-radius: 10px;
+      --wm-label-transform: none;
+      --wm-label-spacing: normal;
+      --wm-btn-bg: var(--wm-accent);
+      --wm-btn-color: #ffffff;
+      --wm-shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(17,24,39,.12);
+    }
+
+    .wrap { font-family: var(--wm-font); }
     .pill, .panel {
-      position: absolute; background: #0e140e; color: #33ff77;
-      border: 1px solid #1f7a3f; box-shadow: 0 0 0 1px #000, 0 6px 20px rgba(0,0,0,.5);
+      position: absolute; background: var(--wm-surface); color: var(--wm-accent-contrast);
+      border: 1px solid var(--wm-border); box-shadow: var(--wm-shadow);
       z-index: 2147483647;
     }
-    .pill { display: flex; gap: 6px; padding: 4px 6px; border-radius: 2px; }
+    .pill { display: flex; gap: 6px; padding: 4px 6px; border-radius: var(--wm-radius); }
     .pill button {
-      all: unset; cursor: pointer; font-size: 11px; padding: 2px 8px;
-      border: 1px solid #1f7a3f; color: #33ff77; text-transform: uppercase; letter-spacing: .08em;
+      all: unset; cursor: pointer; font-size: 11px; padding: 2px 8px; border-radius: var(--wm-radius);
+      border: 1px solid var(--wm-border); color: var(--wm-accent);
+      text-transform: var(--wm-label-transform); letter-spacing: var(--wm-label-spacing);
     }
-    .pill button:hover { background: #103016; }
+    .pill button:hover { background: var(--wm-panel-bg); }
 
     /* Panel */
-    .panel { width: 340px; border-radius: 2px; font-size: 12px; overflow: hidden; }
+    .panel { width: 340px; border-radius: var(--wm-radius); font-size: 12px; overflow: hidden; }
     .panel-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 6px 10px; border-bottom: 1px solid #1f7a3f; background: #0a120a;
+      padding: 6px 10px; border-bottom: 1px solid var(--wm-border); background: var(--wm-panel-bg);
     }
-    .panel-title { color: #7a8a7a; text-transform: uppercase; letter-spacing: .12em; font-size: 10px; }
+    .panel-title { color: var(--wm-muted); text-transform: var(--wm-label-transform); letter-spacing: .12em; font-size: 10px; font-weight: 600; }
     .panel-body { padding: 10px; }
 
     /* Close button — large hit target */
@@ -40,59 +84,67 @@
       all: unset; cursor: pointer;
       width: 24px; height: 24px;
       display: flex; align-items: center; justify-content: center;
-      color: #7a8a7a; font-size: 14px; border-radius: 2px;
+      color: var(--wm-muted); font-size: 14px; border-radius: var(--wm-radius);
     }
-    .close-btn:hover { color: #ff5f56; background: rgba(255,95,86,.1); }
+    .close-btn:hover { color: var(--wm-red); background: var(--wm-red-bg); }
 
     /* Content inside panel body */
-    .answer { color: #33ff77; white-space: pre-wrap; line-height: 1.5; max-height: 200px; overflow: auto; }
-    .src { color: #7a8a7a; border-left: 2px solid #1f7a3f; padding-left: 6px; margin-top: 6px; font-size: 11px; }
+    .answer { color: var(--wm-accent-contrast); white-space: pre-wrap; line-height: 1.5; max-height: 200px; overflow: auto; }
+    .src { color: var(--wm-muted); border-left: 2px solid var(--wm-border); padding-left: 6px; margin-top: 6px; font-size: 11px; }
     .badge {
-      display: inline-block; border: 1px solid #1f7a3f; padding: 0 4px;
-      font-size: 9px; margin-right: 4px; text-transform: uppercase; color: #7a8a7a;
+      display: inline-block; border: 1px solid var(--wm-border); padding: 0 4px; border-radius: var(--wm-radius);
+      font-size: 9px; margin-right: 4px; text-transform: var(--wm-label-transform); color: var(--wm-muted);
     }
-    .muted { color: #7a8a7a; }
-    .amber { color: #ffb000; border-color: #ffb000; }
-    .red { color: #ff5f56; border-color: #ff5f56; }
+    .muted { color: var(--wm-muted); }
+    .amber { color: var(--wm-amber); border-color: var(--wm-amber); background: var(--wm-amber-bg); }
+    .red { color: var(--wm-red); border-color: var(--wm-red); background: var(--wm-red-bg); }
 
     /* Pinned footer — always visible, never scrolls off screen */
     .panel-footer {
       display: flex; align-items: center; gap: 6px;
-      padding: 6px 10px; border-top: 1px solid #1f7a3f; background: #0a120a;
+      padding: 6px 10px; border-top: 1px solid var(--wm-border); background: var(--wm-panel-bg);
     }
     .action-btn {
       all: unset; cursor: pointer; display: inline-flex; align-items: center;
-      gap: 4px; padding: 3px 8px;
-      border: 1px solid #1f7a3f; color: #7a8a7a;
-      font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+      gap: 4px; padding: 3px 8px; border-radius: var(--wm-radius);
+      border: 1px solid var(--wm-border); color: var(--wm-muted);
+      font-size: 10px; text-transform: var(--wm-label-transform); letter-spacing: .06em;
     }
-    .action-btn:hover { color: #33ff77; border-color: #33ff77; }
-    .action-btn.ok { color: #33ff77; border-color: #33ff77; }
+    .action-btn:hover { color: var(--wm-accent); border-color: var(--wm-accent); }
+    .action-btn.ok { color: var(--wm-accent); border-color: var(--wm-accent); }
 
     /* Save form */
     .save-form input[type=text] {
       all: unset; display: block; width: 100%; box-sizing: border-box;
-      background: #080d08; color: #33ff77; border: 1px solid #1f7a3f;
+      background: var(--wm-panel-bg); color: var(--wm-accent-contrast); border: 1px solid var(--wm-border);
+      border-radius: var(--wm-radius);
       padding: 5px 8px; font: inherit; font-size: 11px; margin-top: 6px;
     }
-    .save-form input[type=text]:focus { border-color: #33ff77; outline: none; }
+    .save-form input[type=text]:focus { border-color: var(--wm-accent); outline: none; }
     .save-form .preview {
-      color: #4a6a4a; font-size: 10px; line-height: 1.4;
+      color: var(--wm-muted-dim); font-size: 10px; line-height: 1.4;
       max-height: 48px; overflow: hidden; margin-bottom: 2px;
     }
     .save-form .row { display: flex; gap: 6px; margin-top: 8px; }
     .save-form button {
-      all: unset; cursor: pointer; font-size: 11px; padding: 3px 10px;
-      border: 1px solid #1f7a3f; color: #33ff77; text-transform: uppercase;
+      all: unset; cursor: pointer; font-size: 11px; padding: 3px 10px; border-radius: var(--wm-radius);
+      background: var(--wm-btn-bg); border: 1px solid var(--wm-accent); color: var(--wm-btn-color);
+      text-transform: var(--wm-label-transform);
     }
-    .save-form button:hover { background: #103016; }
-    .save-form button.cancel { color: #7a8a7a; }
+    .save-form button:hover { opacity: .9; }
+    .save-form button.cancel { background: transparent; border-color: var(--wm-border); color: var(--wm-muted); }
   `;
   root.appendChild(style);
 
   const wrap = document.createElement('div');
   wrap.className = 'wrap';
   root.appendChild(wrap);
+
+  // ── Theme — configured once in the web app's Config page, applied here too ──
+  chrome.runtime.sendMessage({ type: 'wm-get-theme' }, (r) => {
+    const theme = r && r.ok ? r.data.theme : 'dev';
+    host.classList.toggle('theme-friendly', theme === 'friendly');
+  });
 
   let pill = null;
   let panel = null;

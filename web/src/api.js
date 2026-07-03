@@ -120,4 +120,13 @@ export const api = {
       method: 'POST',
       headers: headers({ 'Content-Type': 'application/json' }),
     }).then(json),
+
+  // Theme is the single source of truth for web app, browser extension, and floater.
+  getTheme: () => fetch('/api/theme').then(json),
+  setTheme: (theme) =>
+    fetch('/api/theme', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ theme }),
+    }).then(json),
 };

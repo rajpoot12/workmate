@@ -17,6 +17,10 @@ extension/dist/
 .env
 *.local
 
+# Local UI preference (theme), not part of source config
+.wm-theme
+.wm-theme.tmp
+
 # IDE
 .idea/
 .vscode/

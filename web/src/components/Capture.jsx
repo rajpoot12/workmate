@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../api.js';
+import { useTheme } from '../theme.js';
 import { Badge, Panel } from './ui.jsx';
 
 function Result({ r }) {
@@ -53,6 +54,7 @@ function TagChips({ suggested, current, onAdd }) {
 
 export default function Capture({ scope }) {
   const isTeam = scope === 'team';
+  const [theme] = useTheme();
 
   const [note, setNote] = useState('');
   const [title, setTitle] = useState('');
@@ -143,6 +145,125 @@ export default function Capture({ scope }) {
     }
   }
 
+  if (theme === 'friendly') {
+    return (
+      <div className="space-y-4 font-sans">
+        {isTeam && (
+          <div className="bg-friendly-cyanBg text-friendly-cyan rounded-xl px-4 py-3 text-sm">
+            Team mode — your note will be checked for sensitive content before saving to the shared team database.
+          </div>
+        )}
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Quick note card */}
+          <div className="bg-friendly-surface border border-friendly-border rounded-xl p-5">
+            <h3 className="font-semibold text-friendly-text text-sm mb-4">Quick Note</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-friendly-muted mb-1">Title (optional)</label>
+                <input value={title} onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Leave policy, Deploy steps, API key…"
+                  className="w-full border border-friendly-border bg-friendly-bg rounded-lg px-3 py-2 text-sm text-friendly-text placeholder-friendly-muted outline-none focus:border-friendly-accent transition-colors" />
+              </div>
+              <div>
+                <label className="block text-xs text-friendly-muted mb-1">Note</label>
+                <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={5}
+                  placeholder="Write anything you want to remember — links, instructions, credentials, notes…"
+                  className="w-full border border-friendly-border bg-friendly-bg rounded-lg px-3 py-2 text-sm text-friendly-text placeholder-friendly-muted outline-none focus:border-friendly-accent transition-colors resize-none" />
+              </div>
+
+              {similarMatches.length > 0 && (
+                <div className="bg-friendly-amberBg border border-friendly-amber/30 rounded-lg p-3 text-xs">
+                  <div className="font-medium text-friendly-amber mb-1">Similar notes already exist:</div>
+                  {similarMatches.map((m) => (
+                    <div key={m.memoryId} className="text-friendly-muted truncate">{m.title}</div>
+                  ))}
+                  <div className="mt-1 text-friendly-muted">You can still save — or update an existing note instead.</div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs text-friendly-muted mb-1">Tags</label>
+                <input value={tags} onChange={(e) => setTags(e.target.value)}
+                  placeholder="deployment, team, important…"
+                  className="w-full border border-friendly-border bg-friendly-bg rounded-lg px-3 py-2 text-sm text-friendly-text placeholder-friendly-muted outline-none focus:border-friendly-accent transition-colors" />
+                {suggestedTags.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    <span className="text-[10px] text-friendly-muted self-center">Suggested:</span>
+                    {suggestedTags.map(tag => (
+                      <button key={tag} onClick={() => addTag(tag)}
+                        className="text-[10px] bg-friendly-accentBg text-friendly-accent rounded-full px-2 py-0.5 hover:bg-friendly-accent hover:text-white transition-colors">
+                        +{tag}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button onClick={saveNote} disabled={busy || !note.trim()}
+                className="w-full bg-friendly-accent text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-friendly-accent/90 disabled:opacity-50 transition-colors">
+                {busy ? 'Saving…' : 'Save Note'}
+              </button>
+
+              {noteRes && (
+                noteRes.error
+                  ? <div className="text-friendly-red text-sm bg-friendly-redBg rounded-lg px-3 py-2">{noteRes.error}</div>
+                  : <div className="flex items-center gap-2 text-sm text-friendly-green bg-friendly-greenBg rounded-lg px-3 py-2">
+                      <span>Saved — "{noteRes.title}"</span>
+                      {noteRes.scope === 'team' && <span className="text-xs bg-friendly-cyanBg text-friendly-cyan rounded-full px-2 py-0.5">team</span>}
+                    </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {/* Upload card */}
+            <div className="bg-friendly-surface border border-friendly-border rounded-xl p-5">
+              <h3 className="font-semibold text-friendly-text text-sm mb-1">Upload a File</h3>
+              <p className="text-xs text-friendly-muted mb-3">PDF, Word doc, code file, plain text — we extract and remember it.</p>
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-friendly-border rounded-lg p-6 cursor-pointer hover:border-friendly-accent transition-colors">
+                <span className="text-friendly-muted text-sm mb-2">Choose a file or drag it here</span>
+                <span className="bg-friendly-accentBg text-friendly-accent rounded-lg px-4 py-2 text-sm font-medium">Browse Files</span>
+                <input type="file" onChange={upload} className="hidden" />
+              </label>
+              <p className="mt-2 text-[10px] text-friendly-muted text-center">
+                extracted {isTeam ? '→ privacy check ' : ''}→ indexed → searchable
+              </p>
+              {fileRes && (
+                fileRes.error
+                  ? <div className="mt-2 text-friendly-red text-sm">{fileRes.error}</div>
+                  : <div className="mt-2 text-sm text-friendly-green">Saved — "{fileRes.title}"</div>
+              )}
+            </div>
+
+            {/* Scan card */}
+            <div className="bg-friendly-surface border border-friendly-border rounded-xl p-5">
+              <h3 className="font-semibold text-friendly-text text-sm mb-1">Index a Folder</h3>
+              <p className="text-xs text-friendly-muted mb-3">Point to a directory and we index all file names (optionally file contents too).</p>
+              <input value={path} onChange={(e) => setPath(e.target.value)}
+                placeholder="/absolute/path/to/directory"
+                className="w-full border border-friendly-border bg-friendly-bg rounded-lg px-3 py-2 text-sm text-friendly-text placeholder-friendly-muted outline-none focus:border-friendly-accent transition-colors mb-2" />
+              <label className="flex items-center gap-2 text-sm text-friendly-muted mb-3 cursor-pointer">
+                <input type="checkbox" checked={indexContent} onChange={(e) => setIndexContent(e.target.checked)}
+                  className="accent-friendly-accent" />
+                Also index file contents (slower)
+              </label>
+              <button onClick={scan} disabled={busy || !path.trim()}
+                className="w-full bg-friendly-accent text-white rounded-lg py-2 text-sm font-medium hover:bg-friendly-accent/90 disabled:opacity-50 transition-colors">
+                {busy ? 'Scanning…' : 'Scan Folder'}
+              </button>
+              {scanRes && (
+                scanRes.error
+                  ? <div className="mt-2 text-friendly-red text-sm">{scanRes.error}</div>
+                  : <div className="mt-2 text-sm text-friendly-green">Indexed {scanRes.filesIndexed} files</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Developer theme ───────────────────────────────────────────────────────
   return (
     <div className="space-y-3">
       {isTeam && (

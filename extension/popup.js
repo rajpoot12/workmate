@@ -26,6 +26,12 @@ async function loadState() {
 }
 loadState();
 
+// ── Theme — configured once in the web app's Config page, applied here too ──
+chrome.runtime.sendMessage({ type: 'wm-get-theme' }, (r) => {
+  const theme = r && r.ok ? r.data.theme : 'dev';
+  document.body.classList.toggle('theme-friendly', theme === 'friendly');
+});
+
 function renderScope() {
   const badge = $('scopeBadge');
   badge.textContent = currentScope;

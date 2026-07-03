@@ -87,6 +87,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       } else if (msg.type === 'wm-save-settings') {
         await chrome.storage.sync.set(msg.settings);
         sendResponse({ ok: true });
+
+      } else if (msg.type === 'wm-get-theme') {
+        // Theme is configured once in the web app's Config page — the backend
+        // is the single source of truth so the popup and in-page floater
+        // always match without needing their own theme setting.
+        try {
+          const r = await call('/api/theme', null, 'GET');
+          sendResponse({ ok: true, data: r });
+        } catch (e) {
+          sendResponse({ ok: true, data: { theme: 'dev' } }); // fail safe default
+        }
       }
     } catch (e) {
       sendResponse({ ok: false, error: e.message });

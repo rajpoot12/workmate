@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -66,4 +66,29 @@ body {
 
 input, textarea, select, button {
   font-family: inherit;
+}
+
+/* ── Friendly theme overrides ──────────────────────────────────────────── */
+.theme-friendly {
+  color-scheme: light;
+  background-color: #f8f9fb;
+  color: #111827;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Disable CRT effect in friendly mode */
+.theme-friendly .crt::before,
+.theme-friendly .crt::after {
+  display: none;
+}
+
+/* Friendly scrollbar */
+.theme-friendly ::-webkit-scrollbar { width: 6px; height: 6px; }
+.theme-friendly ::-webkit-scrollbar-track { background: #f8f9fb; }
+.theme-friendly ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+/* Friendly focus ring */
+.theme-friendly *:focus-visible {
+  outline: 2px solid #4f6ef7;
+  outline-offset: 1px;
 }
